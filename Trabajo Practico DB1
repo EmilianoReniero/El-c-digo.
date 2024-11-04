@@ -1,0 +1,35 @@
+CREATE TABLE Prestamos (  
+    prestamo_id INT PRIMARY KEY AUTO_INCREMENT,  
+    libro_id INT,  
+    usuario_id INT,  
+    fecha_prestamo DATE NOT NULL,  
+    fecha_devolucion DATE,  
+    FOREIGN KEY (libro_id) REFERENCES Libros(libro_id) ON DELETE CASCADE,  
+    FOREIGN KEY (usuario_id) REFERENCES Usuarios(usuario_id) ON DELETE CASCADE,  
+    CONSTRAINT chk_libro_prestado CHECK (  
+        (SELECT estado FROM Libros WHERE libro_id = libro_id) = 'disponible'  
+        OR fecha_devolucion IS NOT NULL));
+SELECT * FROM Libros WHERE genero = 'Ficción';  
+
+SELECT * FROM Libros WHERE autor = 'Gabriel García Márquez';  
+
+SELECT P.*, L.titulo, U.nombre, U.apellido  
+FROM Prestamos P  
+JOIN Libros L ON P.libro_id = L.libro_id  
+JOIN Usuarios U ON P.usuario_id = U.usuario_id  
+WHERE P.fecha_devolucion IS NULL;  
+
+SELECT P.*, L.titulo, P.fecha_prestamo, P.fecha_devolucion  
+FROM Prestamos P  
+JOIN Libros L ON P.libro_id = L.libro_id  
+WHERE P.usuario_id = (SELECT usuario_id FROM Usuarios WHERE numero_usuario = '12345');  
+
+CREATE FUNCTION TotalLibrosPrestados()  
+RETURNS INT  
+BEGIN  
+    DECLARE total_prestados INT;  
+    SELECT COUNT(*) INTO total_prestados  
+    FROM Prestamos  
+    WHERE fecha_devolucion IS NULL;  
+    RETURN total_prestados;  
+END;  
