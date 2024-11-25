@@ -1,35 +1,63 @@
-CREATE TABLE Prestamos (  
-    prestamo_id INT PRIMARY KEY AUTO_INCREMENT,  
-    libro_id INT,  
-    usuario_id INT,  
-    fecha_prestamo DATE NOT NULL,  
-    fecha_devolucion DATE,  
-    FOREIGN KEY (libro_id) REFERENCES Libros(libro_id) ON DELETE CASCADE,  
-    FOREIGN KEY (usuario_id) REFERENCES Usuarios(usuario_id) ON DELETE CASCADE,  
-    CONSTRAINT chk_libro_prestado CHECK (  
-        (SELECT estado FROM Libros WHERE libro_id = libro_id) = 'disponible'  
-        OR fecha_devolucion IS NOT NULL));
-SELECT * FROM Libros WHERE genero = 'Ficción';  
+CREATE DATABASE Biblioteca;  
+USE Biblioteca;  
 
-SELECT * FROM Libros WHERE autor = 'Gabriel García Márquez';  
+CREATE TABLE Libros(  
+    LibroID INT PRIMARY KEY AUTO_INCREMENT,  
+    Titulo VARCHAR(255) NOT NULL,  
+    Autor VARCHAR(255) NOT NULL,  
+    Genero VARCHAR(100),  
+    AnioPublicacion INT CHECK (AnioPublicacion > 0),  
+    Estado ENUM('Disponible', 'Prestado') DEFAULT 'Disponible');  
 
-SELECT P.*, L.titulo, U.nombre, U.apellido  
+CREATE TABLE Usuarios(  
+    UsuarioID INT PRIMARY KEY AUTO_INCREMENT,  
+    Nombre VARCHAR(100) NOT NULL,  
+    Apellido VARCHAR(100) NOT NULL,  
+    NumeroUsuario VARCHAR(50) UNIQUE NOT NULL,  
+    FechaMembresia DATE NOT NULL);  
+ 
+CREATE TABLE Prestamos(  
+    PrestamoID INT PRIMARY KEY AUTO_INCREMENT,  
+    LibroID INT,  
+    UsuarioID INT,  
+    FechaPrestamo DATE NOT NULL,  
+    FechaDevolucion DATE,  
+    FOREIGN KEY (LibroID) REFERENCES Libros(LibroID) ON DELETE CASCADE,  
+    FOREIGN KEY (UsuarioID) REFERENCES Usuarios(UsuarioID) ON DELETE CASCADE,  
+    CONSTRAINT CHK_Libro_En_Prestamo CHECK(  
+    (SELECT Estado FROM Libros WHERE LibroID = Libros.LibroID) = 'Disponible'));  
+
+INSERT INTO Libros (Titulo, Autor, Genero, AnioPublicacion, Estado) VALUES  
+('Cien años de soledad', 'Gabriel García Márquez', 'Ficción', 1967, 'Disponible'),  
+('1984', 'George Orwell', 'Ciencia Ficción', 1949, 'Disponible'),  
+('El túnel', 'Ernesto Sabato', 'Ficción', 1948, 'Disponible');  
+
+INSERT INTO Usuarios (Nombre, Apellido, NumeroUsuario, FechaMembresia) VALUES  
+('Juan', 'Pérez', 'U001', '2022-01-15'),  
+('Ana', 'García', 'U002', '2022-02-20'),  
+('Luis', 'Sánchez', 'U003', '2022-03-05');  
+
+INSERT INTO Prestamos (LibroID, UsuarioID, FechaPrestamo, FechaDevolucion) VALUES  
+(1, 2, CURDATE(), NULL);  
+ 
+SELECT * FROM Libros WHERE Genero = 'Ficción';  
+
+SELECT P.PrestamoID, L.Titulo, U.Nombre, U.Apellido, P.FechaPrestamo   
 FROM Prestamos P  
-JOIN Libros L ON P.libro_id = L.libro_id  
-JOIN Usuarios U ON P.usuario_id = U.usuario_id  
-WHERE P.fecha_devolucion IS NULL;  
+JOIN Libros L ON P.LibroID = L.LibroID  
+JOIN Usuarios U ON P.UsuarioID = U.UsuarioID  
+WHERE P.FechaDevolucion IS NULL;  
 
-SELECT P.*, L.titulo, P.fecha_prestamo, P.fecha_devolucion  
+SELECT P.PrestamoID, L.Titulo, P.FechaPrestamo, P.FechaDevolucion   
 FROM Prestamos P  
-JOIN Libros L ON P.libro_id = L.libro_id  
-WHERE P.usuario_id = (SELECT usuario_id FROM Usuarios WHERE numero_usuario = '12345');  
+JOIN Libros L ON P.LibroID = L.LibroID  
+WHERE P.UsuarioID = (SELECT UsuarioID FROM Usuarios WHERE NumeroUsuario = 'U002');  
 
-CREATE FUNCTION TotalLibrosPrestados()  
-RETURNS INT  
+CREATE FUNCTION TotalLibrosPrestados() RETURNS INT  
 BEGIN  
-    DECLARE total_prestados INT;  
-    SELECT COUNT(*) INTO total_prestados  
-    FROM Prestamos  
-    WHERE fecha_devolucion IS NULL;  
-    RETURN total_prestados;  
+    DECLARE total INT;  
+    SELECT COUNT(*) INTO total FROM Prestamos WHERE FechaDevolucion IS NULL;  
+    RETURN total;  
 END;  
+
+SELECT TotalLibrosPrestados() AS TotalPrestados;  
